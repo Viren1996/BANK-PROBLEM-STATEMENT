@@ -1,0 +1,223 @@
+A. Customer Nodes Exploration
+
+1) How many unique nodes are there on the Data Bank system?
+
+SELECT 
+COUNT(DISTINCT node_id)
+FROM data_bank.customer_nodes;
+
+2) What is the number of nodes per region?
+
+SELECT 
+     cn.region_id, bn.region_name, COUNT(node_id)AS node_Count
+FROM 
+     customer_nodes cn
+JOIN bank_regions AS bn
+     ON cn.region_id = bn.region_id
+GROUP BY cn.region_id,bn.region_name
+ORDER BY region_id;
+
+
+
+3) How many customers are allocated to each region?
+SELECT 
+     region_id, 
+     COUNT(customer_id) AS customer_count
+     FROM data_bank.customer_nodes
+GROUP BY region_id
+ORDER BY region_id;
+
+OR
+
+SELECT 
+      cn.region_id,bn.region_name,
+      count(customer_id) AS customer_count
+FROM customer_nodes cn
+JOIN bank_regions AS bn
+      ON cn.region_id = bn.region_id
+GROUP BY cn.region_id,bn.region_name;
+
+
+
+4) How many days on average are customers reallocated to a different node?
+By using recursive fuction:-
+
+WITH node_diff AS (
+  SELECT 
+      customer_id, node_id, start_date, end_date,
+      end_date - start_date AS diff
+  FROM data_bank.customer_nodes
+      WHERE end_date != '9999-12-31'
+  GROUP BY customer_id, node_id, start_date, end_date
+  ORDER BY customer_id, node_id
+  ),
+sum_diff_cte AS (
+  SELECT 
+    customer_id, node_id, SUM(diff) AS sum_diff
+  FROM node_diff
+  GROUP BY customer_id, node_id)
+
+SELECT 
+ROUND(AVG(sum_diff),3) AS avg_reallocation_days
+FROM sum_diff_cte;
+
+
+5. What is the median, 80th and 95th percentile for this same reallocation days metric for each region?
+WITH get_all_days AS (
+	SELECT
+		r.region_name,
+		cn.customer_id,
+		cn.node_id,
+		cn.start_date,
+		cn.end_date,
+		LAG(cn.node_id) OVER (PARTITION BY cn.customer_id ORDER BY cn.start_date) AS prev_node
+	FROM
+		customer_nodes AS cn
+	JOIN regions AS r
+	ON r.region_id = cn.region_id
+	WHERE 
+		EXTRACT(YEAR FROM cn.end_date) != '9999'
+	ORDER BY
+		cn.customer_id,
+		cn.start_date
+),
+perc_reallocation AS (
+SELECT
+	region_name,
+	PERCENTILE_CONT(0.5) WITHIN GROUP(ORDER BY end_date - start_date) AS "50th_perc",
+	PERCENTILE_CONT(0.8) WITHIN GROUP(ORDER BY end_date - start_date) AS "80th_perc",
+	PERCENTILE_CONT(0.95) WITHIN GROUP(ORDER BY end_date - start_date) AS "95th_perc"
+FROM
+	get_all_days
+WHERE
+	prev_node != node_id
+GROUP BY 
+	region_name
+)
+SELECT
+	region_name,
+	CEIL("50th_perc") AS median,
+	CEIL("80th_perc") AS "80th_percentile",
+	CEIL("95th_perc") AS "95th_percentile"
+FROM
+	perc_reallocation;
+
+
+
+B. Customer Transactions
+
+1) What is the unique count and total amount for each transaction type?
+
+SELECT txn_type,
+       COUNT(*)AS unique_count,
+       SUM(txn_amount)AS total_amount
+FROM customer_transactions
+GROUP BY txn_type;
+
+
+2) What is the average total historical deposit(deposit transactions) counts and amounts for all customers?
+ 
+WITH deposits AS (
+    SELECT customer_id, txn_type, 
+         COUNT(*) AS txn_count, 
+         AVG(txn_amount) AS avg_amount
+    FROM data_bank.customer_transactions
+    GROUP BY customer_id, txn_type)
+	
+SELECT 
+   ROUND(AVG(txn_count)) AS avg_deposit, 
+   ROUND(AVG(avg_amount)) AS avg_amount
+FROM deposits
+WHERE txn_type = 'deposit';
+
+
+
+3. For each month - how many Data Bank customers make more than 1 deposit and either 1 purchase or 1 withdrawal in a single month?
+
+WITH get_all_transactions_count AS (
+	SELECT
+		DISTINCT customer_id,
+		to_char(txn_date, 'Month') AS current_month,
+		sum(
+			CASE
+				WHEN txn_type = 'purchase' THEN 1
+				ELSE NULL
+			END  
+		) AS purchase_count,
+		sum(
+			CASE
+				WHEN txn_type = 'withdrawal' THEN 1
+				ELSE NULL
+			END  
+		) AS withdrawal_count,
+		sum(
+			CASE
+				WHEN txn_type = 'deposit' THEN 1
+				ELSE NULL
+			END  
+		) AS deposit_count
+	FROM
+		customer_transactions
+	GROUP BY
+		customer_id,
+		current_month
+)
+SELECT
+	current_month,
+	count(customer_id) AS customer_count
+FROM
+	get_all_transactions_count
+WHERE
+	deposit_count > 1
+	AND (purchase_count >= 1
+		OR withdrawal_count >= 1)
+GROUP BY
+	current_month
+ORDER BY
+	to_date(current_month, 'Month');
+
+
+4. What is the closing balance for each customer at the end of the month?
+
+CREATE TEMP TABLE closing_balance AS (
+	SELECT
+		customer_id,
+		txn_amount,
+		date_part('Month', txn_date) AS txn_month,
+		SUM(
+			CASE
+	        	WHEN txn_type = 'deposit' THEN txn_amount
+	        	ELSE -txn_amount  -- Subtract transaction if not a deposit
+	              
+			END
+		) AS transaction_amount
+	FROM
+		customer_transactions
+	GROUP BY
+		customer_id,
+		txn_month,
+		txn_amount
+	ORDER BY
+		customer_id
+);
+
+WITH get_all_transactions_per_month AS (
+	SELECT customer_id,
+	       txn_month,
+	       transaction_amount,
+	       sum(transaction_amount) over(PARTITION BY customer_id ORDER BY txn_month ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS closing_balance,
+	       row_number() OVER (PARTITION BY customer_id, txn_month ORDER BY txn_month desc) AS rn
+	FROM closing_balance
+	ORDER BY 
+		customer_id,
+		txn_month
+)
+SELECT 
+	customer_id,
+	txn_month,
+	transaction_amount,
+	closing_balance
+from
+	get_all_transactions_per_month
+WHERE rn = 1
+LIMIT 15;
