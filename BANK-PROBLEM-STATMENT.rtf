@@ -1,0 +1,989 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2708
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 ArialMT;\f1\froman\fcharset0 TimesNewRomanPSMT;\f2\fswiss\fcharset0 Arial-BoldMT;
+}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;\red24\green26\blue30;\red255\green255\blue255;
+}
+{\*\expandedcolortbl;;\cssrgb\c0\c0\c0;\cssrgb\c12157\c13725\c15686;\cssrgb\c100000\c100000\c100000;
+}
+\paperw11900\paperh16840\margl1440\margr1440\vieww28600\viewh18000\viewkind0
+\deftab720
+\pard\pardeftab720\sl337\partightenfactor0
+
+\f0\fs29\fsmilli14667 \cf2 \expnd0\expndtw0\kerning0
+Topic-Introduction to Bank problem statement\
+========================================================================\
+There is a new innovation in the financial industry called Neo-Banks: new aged digital only banks without physical branches.\
+\'a0\
+If we observe the data carefully there is some sort of intersection between these new age banks, cryptocurrency and the data world\
+The team has launch a new initiative which is called- Data Bank!\
+\'a0\
+Data Bank runs just like any other digital bank - but it isn\'92t only for banking activities, they also have the world\'92s most secure distributed data storage platform!\
+\'a0\
+Customers are allocated cloud data storage limits which are directly linked to how much money they have in their accounts. \
+There are a few interesting aspect that go with this business model\
+\'a0\
+The management team at Data Bank want to increase their total customer base - but also need some help tracking just how much data storage their customers will need.\
+\'a0\
+This case study is all about calculating metrics, growth and helping the business analyse their data in a smart way to better forecast and plan for their future developments!\
+\'a0\
+\'a0\
+\'a0\
+\'a0\
+\'a0\
+\'a0\
+Case Study Questions\
+The following case study questions include some general data exploration analysis for the nodes and transactions before diving right into the core business questions and finishes with a challenging final request!\
+\'a0\
+A. Customer Nodes Exploration\
+1) How many unique nodes are there on the Data Bank system?\
+2) What is the number of nodes per region?\
+3) How many customers are allocated to each region?\
+4) How many days on average are customers reallocated to a different node?\
+5) What is the median, 80th and 95th percentile for this same reallocation days metric for each region?\
+\'a0\
+B. Customer Transactions\
+1) What is the unique count and total amount for each transaction type?\
+2) What is the average total historical deposit counts and amounts for all customers?\
+3) For each month - how many Data Bank customers make more than 1 deposit and either 1 purchase or 1 withdrawal in a single month?\
+4) What is the closing balance for each customer at the end of the month?\
+5) What is the percentage of customers who increase their closing balance by more than 5%?\
+\'a0\
+\'a0\
+\'a0\
+\'a0\
+A. Customer Nodes Exploration\
+\'a0\
+1) How many unique nodes are there on the Data Bank system?\
+SELECT \
+COUNT(DISTINCT node_id)\
+FROM data_bank.customer_nodes;\
+\'a0\
+2) What is the number of nodes per region?\
+SELECT r.region_id, r.region_name, \
+COUNT(*) AS node_count\
+FROM data_bank.regions r\
+JOIN data_bank.customer_nodes n\
+\'a0\'a0\'a0 ON r.region_id = n.region_id\
+GROUP BY r.region_id, r.region_name\
+ORDER BY region_id;\
+\'a0\
+\pard\pardeftab720\partightenfactor0
+\cf2 OR\
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs32 \cf2 \'a0
+\f0\fs29\fsmilli14667 \
+SELECT cn.region_id, bn.region_name, COUNT(node_id)AS node_Count\
+FROM customer_nodes cn\
+JOIN bank_regions AS bn\
+ON cn.region_id = bn.region_id\
+GROUP BY cn.region_id,bn.region_name\
+ORDER BY region_id;\
+
+\f1\fs32 \'a0
+\f0\fs29\fsmilli14667 \
+\pard\pardeftab720\sl337\partightenfactor0
+\cf2 \'a0\
+\'a0\
+3) How many customers are allocated to each region?\
+SELECT region_id, \
+COUNT(customer_id) AS customer_count\
+FROM data_bank.customer_nodes\
+GROUP BY region_id\
+ORDER BY region_id;\
+\'a0\
+OR\
+\'a0\
+\pard\pardeftab720\partightenfactor0
+\cf2 SELECT cn.region_id,bn.region_name,count(customer_id) AS customer_count\
+FROM customer_nodes cn\
+JOIN bank_regions AS bn\
+ON cn.region_id = bn.region_id\
+GROUP BY cn.region_id,bn.region_name\
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs32 \cf2 \'a0
+\f0\fs29\fsmilli14667 \
+\pard\pardeftab720\sl337\partightenfactor0
+\cf2 \'a0\
+\'a0\
+\'a0\
+4) How many days on average are customers reallocated to a different node?\
+\'97here we are using the recursive function \
+WITH node_diff AS (\
+\'a0 SELECT \
+\'a0\'a0\'a0 customer_id, node_id, start_date, end_date,\
+\'a0\'a0\'a0 end_date - start_date AS diff\
+\'a0 FROM data_bank.customer_nodes\
+\'a0 WHERE end_date != '9999-12-31'\
+\'a0 GROUP BY customer_id, node_id, start_date, end_date\
+\'a0 ORDER BY customer_id, node_id\
+\'a0 ),\
+sum_diff_cte AS (\
+\'a0 SELECT \
+\'a0\'a0\'a0 customer_id, node_id, SUM(diff) AS sum_diff\
+\'a0 FROM node_diff\
+\'a0 GROUP BY customer_id, node_id)\
+\'a0\
+SELECT \
+ROUND(AVG(sum_diff),3) AS avg_reallocation_days\
+FROM sum_diff_cte;\
+\'a0\
+\'a0\
+\'a0\
+select * from regions\
+select * from customer_nodes\
+select * from customer_transactions\
+\'a0\
+\pard\pardeftab720\sl400\sa320\partightenfactor0
+
+\f2\b\fs32 \cf3 \cb4 5. What is the median, 80th and 95th percentile for this same reallocation days metric for each region?\cf2 \
+\pard\pardeftab720\sl306\partightenfactor0
+
+\f0\b0\fs26\fsmilli13333 \cf3 \cb1 WITH get_all_days AS (
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 SELECT
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 r.region_name,
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 cn.customer_id,
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 cn.node_id,
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 cn.start_date,
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 cn.end_date,
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 LAG(cn.node_id) OVER (PARTITION BY cn.customer_id ORDER BY cn.start_date) AS prev_node
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 FROM
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 customer_nodes AS cn
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 JOIN regions AS r
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 ON r.region_id = cn.region_id
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 WHERE 
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 EXTRACT(YEAR FROM cn.end_date) != '9999'
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 ORDER BY
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 cn.customer_id,
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 cn.start_date
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 ),
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 perc_reallocation AS (
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 SELECT
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 region_name,
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 PERCENTILE_CONT(0.5) WITHIN GROUP(ORDER BY end_date - start_date) AS "50th_perc",
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 PERCENTILE_CONT(0.8) WITHIN GROUP(ORDER BY end_date - start_date) AS "80th_perc",
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 PERCENTILE_CONT(0.95) WITHIN GROUP(ORDER BY end_date - start_date) AS "95th_perc"
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 FROM
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 get_all_days
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 WHERE
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 prev_node != node_id
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 GROUP BY 
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 region_name
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 )
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 SELECT
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 region_name,
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 CEIL("50th_perc") AS median,
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 CEIL("80th_perc") AS "80th_percentile",
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 CEIL("95th_perc") AS "95th_percentile"
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 FROM
+\fs29\fsmilli14667 \cf2 \
+\pard\pardeftab720\sl386\sa320\partightenfactor0
+
+\fs26\fsmilli13333 \cf3 \cb4 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 perc_reallocation;
+\fs29\fsmilli14667 \cf2 \
+\pard\pardeftab720\sl337\partightenfactor0
+\cf2 \cb1 \'a0\
+\'a0\
+\'a0\
+B. Customer Transactions\
+) What is the unique count and total amount for each transaction type?\
+SELECT txn_type, \
+COUNT(*),SUM(txn_amount) AS total_amount\
+FROM data_bank.customer_transactions\
+GROUP BY txn_type\
+\'a0\
+\'a0\
+OR\
+\
+\'a0\
+SELECT txn_type,\
+COUNT(*)AS unique_count,SUM(txn_amount)AS total_amount\
+FROM customer_transactions\
+GROUP BY txn_type;\
+\'a0\
+2) What is the average total historical deposit(deposit transactions) counts and amounts for all customers?\
+----Firstly, find the count of transaction and average transaction amount for each customer.\
+\'a0WITH deposits AS (\
+\'a0 SELECT customer_id, txn_type, \
+\'a0\'a0\'a0 COUNT(*) AS txn_count, \
+\'a0\'a0\'a0 AVG(txn_amount) AS avg_amount\
+\'a0\'a0\'a0 FROM data_bank.customer_transactions\
+\'a0\'a0\'a0 GROUP BY customer_id, txn_type)\
+\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 \
+Then, find the average of both columns where the transaction type is deposit.\
+SELECT \
+\'a0 ROUND(AVG(txn_count)) AS avg_deposit, \
+\'a0 ROUND(AVG(avg_amount)) AS avg_amount\
+FROM deposits\
+WHERE txn_type = 'deposit';\
+\'a0\
+\'a0\
+\'a0\
+\pard\pardeftab720\sl400\sa320\partightenfactor0
+
+\f2\b\fs32 \cf3 \cb4 3. For each month - how many Data Bank customers make more than 1 deposit and either 1 purchase or 1 withdrawal in a single month?\cf2 \
+\pard\pardeftab720\sl306\partightenfactor0
+
+\f0\b0\fs26\fsmilli13333 \cf3 \cb1 WITH get_all_transactions_count AS (
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 SELECT
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 DISTINCT customer_id,
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 to_char(txn_date, 'Month') AS current_month,
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 sum(
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 CASE
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 WHEN txn_type = 'purchase' THEN 1
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 ELSE NULL
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 END\'a0 
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 ) AS purchase_count,
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 sum(
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 CASE
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 WHEN txn_type = 'withdrawal' THEN 1
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 ELSE NULL
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 END\'a0 
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 ) AS withdrawal_count,
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 sum(
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 CASE
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 WHEN txn_type = 'deposit' THEN 1
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 ELSE NULL
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 END\'a0 
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 ) AS deposit_count
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 FROM
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 customer_transactions
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 GROUP BY
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 customer_id,
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 current_month
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 )
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 SELECT
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 current_month,
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 count(customer_id) AS customer_count
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 FROM
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 get_all_transactions_count
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 WHERE
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 deposit_count > 1
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 AND (purchase_count >= 1
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 OR withdrawal_count >= 1)
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 GROUP BY
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 current_month
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 ORDER BY
+\fs29\fsmilli14667 \cf2 \
+\pard\pardeftab720\sl386\sa320\partightenfactor0
+
+\fs26\fsmilli13333 \cf3 \cb4 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 to_date(current_month, 'Month');
+\fs29\fsmilli14667 \cf2 \
+\pard\pardeftab720\sl337\partightenfactor0
+\cf2 \cb1 \'a0\
+\'a0\
+\'a0\
+\'a0\
+\'a0\
+
+\itap1\trowd \taflags1 \trgaph108\trleft-108 \trwWidth5873\trftsWidth3 \trbrdrt\brdrnil \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth2258\clftsWidth3 \clbrdrt\brdrs\brdrw20\brdrcf3 \clbrdrl\brdrs\brdrw20\brdrcf3 \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx4320
+\clvertalt \clshdrawnil \clwWidth2489\clftsWidth3 \clbrdrt\brdrs\brdrw20\brdrcf3 \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\sl368\sa320\qc\partightenfactor0
+
+\f2\b\fs32 \cf3 current_month
+\f0\b0\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\qc\partightenfactor0
+
+\f2\b\fs32 \cf3 customer_count
+\f0\b0\fs29\fsmilli14667 \cf2 \cell \row
+
+\itap1\trowd \taflags1 \trgaph108\trleft-108 \trwWidth5873\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth2258\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrs\brdrw20\brdrcf3 \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx4320
+\clvertalt \clshdrawnil \clwWidth2489\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 January
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 168
+\fs29\fsmilli14667 \cf2 \cell \row
+
+\itap1\trowd \taflags1 \trgaph108\trleft-108 \trwWidth5873\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth2258\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrs\brdrw20\brdrcf3 \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx4320
+\clvertalt \clshdrawnil \clwWidth2489\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 February
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 181
+\fs29\fsmilli14667 \cf2 \cell \row
+
+\itap1\trowd \taflags1 \trgaph108\trleft-108 \trwWidth5873\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth2258\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrs\brdrw20\brdrcf3 \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx4320
+\clvertalt \clshdrawnil \clwWidth2489\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 March
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 192
+\fs29\fsmilli14667 \cf2 \cell \row
+
+\itap1\trowd \taflags1 \trgaph108\trleft-108 \trwWidth5873\trftsWidth3 \trbrdrl\brdrnil \trbrdrt\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth2258\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrs\brdrw20\brdrcf3 \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx4320
+\clvertalt \clshdrawnil \clwWidth2489\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 April
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 70
+\fs29\fsmilli14667 \cf2 \cell \lastrow\row
+\pard\pardeftab720\sl337\partightenfactor0
+\cf2 \'a0\
+\'a0\
+\pard\pardeftab720\sl400\sa320\partightenfactor0
+
+\f2\b\fs32 \cf3 \cb4 4. What is the closing balance for each customer at the end of the month?\cf2 \
+\pard\pardeftab720\sl306\partightenfactor0
+
+\f0\b0\fs26\fsmilli13333 \cf3 \cb1 DROP TABLE IF EXISTS closing_balance;
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 CREATE TEMP TABLE closing_balance AS (
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 SELECT
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 customer_id,
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 txn_amount,
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 date_part('Month', txn_date) AS txn_month,
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 SUM(
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 CASE
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 \'a0\'a0\'a0\'a0\'a0\'a0\'a0 \'a0\'a0\'a0\'a0 WHEN txn_type = 'deposit' THEN txn_amount
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 \'a0\'a0\'a0\'a0\'a0\'a0\'a0 \'a0\'a0\'a0\'a0 ELSE -txn_amount\'a0 -- Subtract transaction if not a deposit
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 END
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 ) AS transaction_amount
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 FROM
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 customer_transactions
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 GROUP BY
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 customer_id,
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 txn_month,
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 txn_amount
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 ORDER BY
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 customer_id
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 );
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 WITH get_all_transactions_per_month AS (
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 SELECT customer_id,
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 \'a0\'a0\'a0\'a0\'a0\'a0 txn_month,
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 \'a0\'a0\'a0\'a0\'a0\'a0 transaction_amount,
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 \'a0\'a0\'a0\'a0\'a0\'a0 sum(transaction_amount) over(PARTITION BY customer_id ORDER BY txn_month ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS closing_balance,
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 \'a0\'a0\'a0\'a0\'a0\'a0 row_number() OVER (PARTITION BY customer_id, txn_month ORDER BY txn_month desc) AS rn
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 FROM closing_balance
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 ORDER BY 
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 customer_id,
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 txn_month
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 )
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 SELECT 
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 customer_id,
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 txn_month,
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 transaction_amount,
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 closing_balance
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 from
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 get_all_transactions_per_month
+\fs29\fsmilli14667 \cf2 \
+
+\fs26\fsmilli13333 \cf3 WHERE rn = 1
+\fs29\fsmilli14667 \cf2 \
+\pard\pardeftab720\sl386\sa320\partightenfactor0
+
+\fs26\fsmilli13333 \cf3 \cb4 LIMIT 15;
+\fs29\fsmilli14667 \cf2 \
+\pard\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 Results:It is restricted to limited results for the reference
+\fs29\fsmilli14667 \cf2 \
+
+\itap1\trowd \taflags1 \trgaph108\trleft-108 \trwWidth11319\trftsWidth3 \trbrdrt\brdrnil \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth1902\clftsWidth3 \clbrdrt\brdrs\brdrw20\brdrcf3 \clbrdrl\brdrs\brdrw20\brdrcf3 \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx2160
+\clvertalt \clshdrawnil \clwWidth1635\clftsWidth3 \clbrdrt\brdrs\brdrw20\brdrcf3 \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx4320
+\clvertalt \clshdrawnil \clwWidth3058\clftsWidth3 \clbrdrt\brdrs\brdrw20\brdrcf3 \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx6480
+\clvertalt \clshdrawnil \clwWidth2490\clftsWidth3 \clbrdrt\brdrs\brdrw20\brdrcf3 \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\sl368\sa320\qc\partightenfactor0
+
+\f2\b\fs32 \cf3 \cb1 customer_id
+\f0\b0\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\qc\partightenfactor0
+
+\f2\b\fs32 \cf3 txn_month
+\f0\b0\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\qc\partightenfactor0
+
+\f2\b\fs32 \cf3 transaction_amount
+\f0\b0\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\qc\partightenfactor0
+
+\f2\b\fs32 \cf3 closing_balance
+\f0\b0\fs29\fsmilli14667 \cf2 \cell \row
+
+\itap1\trowd \taflags1 \trgaph108\trleft-108 \trwWidth11319\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth1902\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrs\brdrw20\brdrcf3 \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx2160
+\clvertalt \clshdrawnil \clwWidth1635\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx4320
+\clvertalt \clshdrawnil \clwWidth3058\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx6480
+\clvertalt \clshdrawnil \clwWidth2490\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 1
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 1.0
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 312
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 312
+\fs29\fsmilli14667 \cf2 \cell \row
+
+\itap1\trowd \taflags1 \trgaph108\trleft-108 \trwWidth11319\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth1902\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrs\brdrw20\brdrcf3 \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx2160
+\clvertalt \clshdrawnil \clwWidth1635\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx4320
+\clvertalt \clshdrawnil \clwWidth3058\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx6480
+\clvertalt \clshdrawnil \clwWidth2490\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 1
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 3.0
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 324
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 -640
+\fs29\fsmilli14667 \cf2 \cell \row
+
+\itap1\trowd \taflags1 \trgaph108\trleft-108 \trwWidth11319\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth1902\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrs\brdrw20\brdrcf3 \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx2160
+\clvertalt \clshdrawnil \clwWidth1635\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx4320
+\clvertalt \clshdrawnil \clwWidth3058\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx6480
+\clvertalt \clshdrawnil \clwWidth2490\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 2
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 1.0
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 549
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 549
+\fs29\fsmilli14667 \cf2 \cell \row
+
+\itap1\trowd \taflags1 \trgaph108\trleft-108 \trwWidth11319\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth1902\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrs\brdrw20\brdrcf3 \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx2160
+\clvertalt \clshdrawnil \clwWidth1635\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx4320
+\clvertalt \clshdrawnil \clwWidth3058\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx6480
+\clvertalt \clshdrawnil \clwWidth2490\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 2
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 3.0
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 61
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 610
+\fs29\fsmilli14667 \cf2 \cell \row
+
+\itap1\trowd \taflags1 \trgaph108\trleft-108 \trwWidth11319\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth1902\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrs\brdrw20\brdrcf3 \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx2160
+\clvertalt \clshdrawnil \clwWidth1635\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx4320
+\clvertalt \clshdrawnil \clwWidth3058\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx6480
+\clvertalt \clshdrawnil \clwWidth2490\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 3
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 1.0
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 144
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 144
+\fs29\fsmilli14667 \cf2 \cell \row
+
+\itap1\trowd \taflags1 \trgaph108\trleft-108 \trwWidth11319\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth1902\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrs\brdrw20\brdrcf3 \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx2160
+\clvertalt \clshdrawnil \clwWidth1635\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx4320
+\clvertalt \clshdrawnil \clwWidth3058\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx6480
+\clvertalt \clshdrawnil \clwWidth2490\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 3
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 2.0
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 -965
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 -821
+\fs29\fsmilli14667 \cf2 \cell \row
+
+\itap1\trowd \taflags1 \trgaph108\trleft-108 \trwWidth11319\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth1902\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrs\brdrw20\brdrcf3 \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx2160
+\clvertalt \clshdrawnil \clwWidth1635\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx4320
+\clvertalt \clshdrawnil \clwWidth3058\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx6480
+\clvertalt \clshdrawnil \clwWidth2490\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 3
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 3.0
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 -188
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 -1009
+\fs29\fsmilli14667 \cf2 \cell \row
+
+\itap1\trowd \taflags1 \trgaph108\trleft-108 \trwWidth11319\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth1902\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrs\brdrw20\brdrcf3 \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx2160
+\clvertalt \clshdrawnil \clwWidth1635\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx4320
+\clvertalt \clshdrawnil \clwWidth3058\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx6480
+\clvertalt \clshdrawnil \clwWidth2490\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 3
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 4.0
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 493
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 -729
+\fs29\fsmilli14667 \cf2 \cell \row
+
+\itap1\trowd \taflags1 \trgaph108\trleft-108 \trwWidth11319\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth1902\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrs\brdrw20\brdrcf3 \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx2160
+\clvertalt \clshdrawnil \clwWidth1635\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx4320
+\clvertalt \clshdrawnil \clwWidth3058\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx6480
+\clvertalt \clshdrawnil \clwWidth2490\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 4
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 1.0
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 390
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 390
+\fs29\fsmilli14667 \cf2 \cell \row
+
+\itap1\trowd \taflags1 \trgaph108\trleft-108 \trwWidth11319\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth1902\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrs\brdrw20\brdrcf3 \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx2160
+\clvertalt \clshdrawnil \clwWidth1635\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx4320
+\clvertalt \clshdrawnil \clwWidth3058\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx6480
+\clvertalt \clshdrawnil \clwWidth2490\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 4
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 3.0
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 -193
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 655
+\fs29\fsmilli14667 \cf2 \cell \row
+
+\itap1\trowd \taflags1 \trgaph108\trleft-108 \trwWidth11319\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth1902\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrs\brdrw20\brdrcf3 \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx2160
+\clvertalt \clshdrawnil \clwWidth1635\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx4320
+\clvertalt \clshdrawnil \clwWidth3058\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx6480
+\clvertalt \clshdrawnil \clwWidth2490\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 5
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 1.0
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 806
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 1780
+\fs29\fsmilli14667 \cf2 \cell \row
+
+\itap1\trowd \taflags1 \trgaph108\trleft-108 \trwWidth11319\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth1902\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrs\brdrw20\brdrcf3 \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx2160
+\clvertalt \clshdrawnil \clwWidth1635\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx4320
+\clvertalt \clshdrawnil \clwWidth3058\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx6480
+\clvertalt \clshdrawnil \clwWidth2490\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 5
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 3.0
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 412
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 -1923
+\fs29\fsmilli14667 \cf2 \cell \row
+
+\itap1\trowd \taflags1 \trgaph108\trleft-108 \trwWidth11319\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth1902\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrs\brdrw20\brdrcf3 \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx2160
+\clvertalt \clshdrawnil \clwWidth1635\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx4320
+\clvertalt \clshdrawnil \clwWidth3058\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx6480
+\clvertalt \clshdrawnil \clwWidth2490\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 5
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 4.0
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 -490
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 -2413
+\fs29\fsmilli14667 \cf2 \cell \row
+
+\itap1\trowd \taflags1 \trgaph108\trleft-108 \trwWidth11319\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth1902\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrs\brdrw20\brdrcf3 \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx2160
+\clvertalt \clshdrawnil \clwWidth1635\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx4320
+\clvertalt \clshdrawnil \clwWidth3058\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx6480
+\clvertalt \clshdrawnil \clwWidth2490\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 6
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 1.0
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 796
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 1627
+\fs29\fsmilli14667 \cf2 \cell \row
+
+\itap1\trowd \taflags1 \trgaph108\trleft-108 \trwWidth11319\trftsWidth3 \trbrdrl\brdrnil \trbrdrt\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth1902\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrs\brdrw20\brdrcf3 \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx2160
+\clvertalt \clshdrawnil \clwWidth1635\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx4320
+\clvertalt \clshdrawnil \clwWidth3058\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx6480
+\clvertalt \clshdrawnil \clwWidth2490\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf3 \clbrdrr\brdrs\brdrw20\brdrcf3 \clpadt133 \clpadl266 \clpadb133 \clpadr266 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 6
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 2.0
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 -169
+\fs29\fsmilli14667 \cf2 \cell 
+\pard\intbl\itap1\pardeftab720\sl368\sa320\partightenfactor0
+
+\fs32 \cf3 -52
+\fs29\fsmilli14667 \cf2 \cell \lastrow\row
+\pard\pardeftab720\sl337\partightenfactor0
+\cf2 \'a0\
+\'a0\
+\'a0\
+}
